@@ -1,11 +1,13 @@
 class g_kubernetes::etcd(
   Hash[String, Stdlib::Ipv4] $servers,
-  Stdlib::Ipv4 $cluster_ip,
+  Stdlib::Host $cluster_addr,
   Integer $client_port = 2379,
+  G_server::Side $client_side = 'internal',
   Integer $peer_port = 2380,
+  G_server::Side $peer_side = 'internal',
   String $data_dir = '/var/lib/etcd',
   String $config_dir = '/etc/etcd',
-  Optional[String] $wal_dir = undef,
+  # Optional[String] $wal_dir = undef,
   Hash $options = {},
   Enum['present', 'absent'] $ensure = 'present',
 
@@ -25,6 +27,8 @@ class g_kubernetes::etcd(
   Boolean $peer_cert_auth = true,
   Bolean $peer_auto_tls = false
 ) {
+  include ::g_server
+
   $ssl_dir = "${config_dir}/ssl"
   $config_file = "${config_dir}/etc.yaml"
   $ensure_directory = $ensure?{
@@ -82,6 +86,20 @@ class g_kubernetes::etcd(
       $_config_cert = {}
     }
 
+    if defined(Class['g_server::firewall']) {
+      $side = getvar("::g_kubernetes::etcd::${type}_side")
+      $port = getvar("::g_kubernetes::etcd::${type}_port")
+
+      g_server::get_interfaces($side).each | $iface | {
+        g_firewall { "006 Allow inbound ETCD ${type} from ${iface}":
+          dport   => $port,
+          proto   => tcp,
+          action  => accept,
+          iniface => $iface
+        }
+      }
+    }
+
     merge(
       {
         'client-cert-auth' => getvar("::g_kubernetes::etcd::${type}_cert_auth"),
@@ -95,11 +113,11 @@ class g_kubernetes::etcd(
   $_config = merge({
     'name' => $::fqdn,
     'data-dir' => $data_dir,
-    'wal-dir' => $wal_dir,
-    'listen-peer-urls' => "https://${cluster_ip}:${peer_port}",
-    'listen-client-urls' => "https://${cluster_ip}:${client_port}",
-    'initial-advertise-peer-urls' => "https://${cluster_ip}:${peer_port}",
-    'advertise-client-urls' => "https://${cluster_ip}:${client_port}",
+    # 'wal-dir' => $wal_dir,
+    'listen-peer-urls' => "https://${cluster_addr}:${peer_port}",
+    'listen-client-urls' => "https://${cluster_addr}:${client_port}",
+    'initial-advertise-peer-urls' => "https://${cluster_addr}:${peer_port}",
+    'advertise-client-urls' => "https://${cluster_addr}:${client_port}",
     'initial-cluster' => $servers.map |$name, $ip| { "${name}=https://${ip}:${peer_port}" }.join(','),
     'initial-cluster-token' => 'etcd-cluster',
     'initial-cluster-state' => 'new',
