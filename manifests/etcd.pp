@@ -19,13 +19,13 @@ class g_kubernetes::etcd(
   Optional[G_kubernetes::CertSource] $client_cert = undef,
   Optional[G_kubernetes::CertSource] $client_key = undef,
   Boolean $client_cert_auth = true,
-  Bolean $client_auto_tls = false,
+  Boolean $client_auto_tls = false,
 
   Optional[G_kubernetes::CertSource] $peer_ca_cert = undef,
   Optional[G_kubernetes::CertSource] $peer_cert = undef,
   Optional[G_kubernetes::CertSource] $peer_key = undef,
   Boolean $peer_cert_auth = true,
-  Bolean $peer_auto_tls = false
+  Boolean $peer_auto_tls = false
 ) {
   include ::g_server
 
