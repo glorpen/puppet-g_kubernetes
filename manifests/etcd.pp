@@ -1,5 +1,5 @@
 class g_kubernetes::etcd(
-  Hash[String, Stdlib::Ipv4] $servers,
+  Hash[String, Stdlib::Host] $servers,
   Stdlib::Host $cluster_addr,
   Integer $client_port = 2379,
   G_server::Side $client_side = 'internal',
