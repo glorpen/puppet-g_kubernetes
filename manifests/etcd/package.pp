@@ -62,7 +62,8 @@ class g_kubernetes::etcd::package {
     ensure => $ensure_directory,
     force  => true,
     owner  => $user,
-    group  => $user
+    group  => $user,
+    mode   => 'u=rwx,go='
   }
 
   file { ['/opt/etcd', '/opt/etcd/share', $bin_dir]:
