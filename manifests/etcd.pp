@@ -12,8 +12,10 @@ class g_kubernetes::etcd(
   Enum['present', 'absent'] $ensure = 'present',
 
   Boolean $package_manage = true,
-  String $package_name = 'etcd',
-  Optional[String] $package_version = 'present',
+  String $package_version = '3.4.10',
+  Optional[String] $package_checksum = undef,
+  Boolean $service_manage = true,
+  Boolean $manage_firewall = true,
 
   Optional[G_kubernetes::CertSource] $client_ca_cert = undef,
   Optional[G_kubernetes::CertSource] $client_cert = undef,
@@ -29,64 +31,24 @@ class g_kubernetes::etcd(
 ) {
   include ::g_server
 
+  # dont use system packages,
+  # create user etcd and download given version from vendor
+
   $ssl_dir = "${config_dir}/ssl"
   $config_file = "${config_dir}/etc.yaml"
-  $ensure_directory = $ensure?{
-    'present' => 'directory',
-    default => 'absent'
-  }
-  $ensure_package = $ensure?{
-    'present' => $package_version,
-    default => 'absent'
+
+  if $package_manage {
+    include ::g_kubernetes::etcd::package
   }
 
-  package { $package_name:
-    ensure => $ensure_package
-  }
-  file { $config_dir:
-    ensure => $ensure_directory
-  }
-  file { $ssl_dir:
-    ensure => $ensure_directory
+  if $service_manage {
+    include ::g_kubernetes::etcd::service
   }
 
-  $_configs = ['peer', 'client'].map | $type | {
-    $ca_cert = getvar("::g_kubernetes::etcd::${type}_ca_cert")
-    $ca_cert_path = g_kubernetes::certpath($ssl_dir, "${type}-ca-cert", $ca_cert)
-    if $ca_cert_path {
-      g_kubernetes::certsource{ $ca_cert_path:
-        source => $ca_cert,
-        before => File[$config_file]
-      }
-      $_config_ca = {
-        'trusted-ca-file' => $ca_cert_path
-      }
-    } else {
-      $_config_ca = {}
-    }
+  include ::g_kubernetes::etcd::config
 
-    $cert = getvar("::g_kubernetes::etcd::${type}_cert")
-    $cert_path = g_kubernetes::certpath($ssl_dir, "${type}-cert", $cert)
-    $key = getvar("::g_kubernetes::etcd::${type}_cert")
-    $key_path = g_kubernetes::certpath($ssl_dir, "${type}-key", $key)
-    if $cert_path and $key_path {
-      g_kubernetes::certsource{ $cert_path:
-        source => $cert,
-        before => File[$config_file]
-      }
-      g_kubernetes::certsource{ $key_path:
-        source => $key,
-        before => File[$config_file]
-      }
-      $_config_cert = {
-        'key-file' => $key_path,
-        'cert-file' => $cert_path,
-      }
-    } else {
-      $_config_cert = {}
-    }
-
-    if defined(Class['g_server::firewall']) {
+  if $manage_firewall {
+    ['peer', 'client'].each | $type | {
       $side = getvar("::g_kubernetes::etcd::${type}_side")
       $port = getvar("::g_kubernetes::etcd::${type}_port")
 
@@ -99,49 +61,39 @@ class g_kubernetes::etcd(
         }
       }
     }
-
-    merge(
-      {
-        'client-cert-auth' => getvar("::g_kubernetes::etcd::${type}_cert_auth"),
-        'auto-tls' => getvar("::g_kubernetes::etcd::${type}_auto_tls")
-      },
-      $_config_ca,
-      $_config_cert
-    )
-  }
-
-  $_config = merge({
-    'name' => $::fqdn,
-    'data-dir' => $data_dir,
-    # 'wal-dir' => $wal_dir,
-    'listen-peer-urls' => "https://${cluster_addr}:${peer_port}",
-    'listen-client-urls' => "https://${cluster_addr}:${client_port}",
-    'initial-advertise-peer-urls' => "https://${cluster_addr}:${peer_port}",
-    'advertise-client-urls' => "https://${cluster_addr}:${client_port}",
-    'initial-cluster' => $servers.map |$name, $ip| { "${name}=https://${ip}:${peer_port}" }.join(','),
-    'initial-cluster-token' => 'etcd-cluster',
-    'initial-cluster-state' => 'new',
-    'enable-v2' => false,
-    'enable-pprof' => false,
-    'proxy' => 'off',
-    'client-transport-security' => $_configs[0],
-    'peer-transport-security' => $_configs[1]
-  }, $options)
-
-  file { $config_file:
-    ensure   => $ensure,
-    contents => to_yaml($_config),
-  }
-  service { 'etcd':
-    ensure => $ensure?{'present' => 'running', default => false},
-    enable => $ensure?{'present' => true, default => false}
   }
 
   if $ensure == 'present' {
-    Package[$package_name]->File[$config_file]~>Service['etcd']
-    Package[$package_name]->File[$config_dir]->File[$ssl_dir]->File[$config_file]
+    Class['G_kubernetes::Etcd::Package']
+    ->Class['G_kubernetes::Etcd::Config']
+    ~>Class['G_kubernetes::Etcd::Service']
   } else {
-    Package[$package_name]->Service['etcd']->File[$config_file]
-    Package[$package_name]->File[$config_file]->File[$ssl_dir]->File[$config_dir]
+    Class['G_kubernetes::Etcd::Service']
+    ->Class['G_kubernetes::Etcd::Config']
+    ->Class['G_kubernetes::Etcd::Package']
   }
+
+# ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
+# ETCD_LISTEN_CLIENT_URLS="http://localhost:2379"
+# ETCD_NAME="default"
+# ETCD_ADVERTISE_CLIENT_URLS="http://localhost:2379"
+# cat /usr/lib/systemd/system/etcd.service
+# [Unit]
+# Description=Etcd Server
+# After=network.target
+# After=network-online.target
+# Wants=network-online.target
+
+# [Service]
+# Type=notify
+# WorkingDirectory=/var/lib/etcd/
+# EnvironmentFile=-/etc/etcd/etcd.conf
+# User=etcd
+# # set GOMAXPROCS to number of processors
+# ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) /usr/bin/etcd --name=\"${ETCD_NAME}\" --data-dir=\"${ETCD_DATA_DIR}\" --listen-client-urls=\"${ETCD_LISTEN_CLIENT_URLS}\""
+# Restart=on-failure
+# LimitNOFILE=65536
+
+# [Install]
+# WantedBy=multi-user.target
 }

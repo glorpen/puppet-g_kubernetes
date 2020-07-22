@@ -17,6 +17,10 @@
     {
       "name": "glorpen/g_server",
       "version_requirement": ">=2.2.0 <3.0.0"
+    },
+    {
+      "name": "puppet/archive",
+      "version_requirement": ">=4.0.0 <5.0.0"
     }
   ],
   "operatingsystem_support": [
