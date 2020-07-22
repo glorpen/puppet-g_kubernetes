@@ -77,8 +77,8 @@ class g_kubernetes::etcd::config {
   }, $options)
 
   file { $config_file:
-    ensure   => $ensure,
-    contents => to_yaml($_config),
+    ensure  => $ensure,
+    content => to_yaml($_config),
   }
 
 }
