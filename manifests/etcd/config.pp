@@ -69,30 +69,33 @@ class g_kubernetes::etcd::config {
     $_peer_schema = 'http'
   }
 
-  $_listen_peer_urls = g_server::get_interfaces($::g_kubernetes::etcd::peer_side).map | $iface | {
-    $iface_config = $::facts['networking']['interfaces'][$iface]
-    $iface_config['bindings'].map | $b | {
-      "${_peer_schema}://${b['address']}:${peer_port}"
-    } + $iface_config['bindings6'].map | $b | {
-      "${_peer_schema}://[${b['address']}]:${peer_port}"
-    }
-  }.join(',')
+  $_listen_config = Hash({
+    'client' => 'listen-client-urls',
+    'peer' => 'listen-peer-urls'
+  }.map | $type, $config_key | {
+    $side = getvar("::g_kubernetes::etcd::${type}_side")
+    $port = getvar("::g_kubernetes::etcd::${type}_port")
+    $schema = getvar("::g_kubernetes::etcd::config::_${type}_schema")
 
-  $_listen_client_urls = g_server::get_interfaces($::g_kubernetes::etcd::client_side).map | $iface | {
-    $iface_config = $::facts['networking']['interfaces'][$iface]
-    $iface_config['bindings'].map | $b | {
-      "${_client_schema}://${b['address']}:${client_port}"
-    } + $iface_config['bindings6'].map | $b | {
-      "${_client_schema}://[${b['address']}]:${client_port}"
-    }
-  }.join(',')
+    [
+      $config_key,
+      g_server::get_interfaces($side).map | $iface | {
+        $iface_config = $::facts['networking']['interfaces'][$iface]
+        $iface_config['bindings'].map | $b | {
+          "${schema}://${b['address']}:${port}"
+        } + $iface_config['bindings6'].filter | $b | {
+          $b['address'] !~ G_kubernetes::Ipv6LinkLocal
+        }.map | $b | {
+          "${schema}://[${b['address']}]:${port}"
+        }
+      }.join(',')
+    ]
+  })
 
   $_config = merge({
     'name' => $::fqdn,
     'data-dir' => $data_dir,
     # 'wal-dir' => $wal_dir,
-    'listen-peer-urls' => $_listen_peer_urls,
-    'listen-client-urls' => $_listen_client_urls,
     'initial-advertise-peer-urls' => "${_peer_schema}://${cluster_addr}:${peer_port}",
     'advertise-client-urls' => "${_client_schema}://${cluster_addr}:${client_port}",
     'initial-cluster' => $servers.map |$name, $ip| { "${name}=${_peer_schema}://${ip}:${peer_port}" }.join(','),
@@ -103,7 +106,7 @@ class g_kubernetes::etcd::config {
     'proxy' => 'off',
     'client-transport-security' => $_configs[0],
     'peer-transport-security' => $_configs[1]
-  }, $options)
+  }, $_listen_config, $options)
 
   file { $config_file:
     ensure  => $ensure,
