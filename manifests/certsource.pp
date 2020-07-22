@@ -7,7 +7,7 @@ define g_kubernetes::certsource(
       source => $source,
       *      => $options
     }
-  } elsif $source !~ Stdlib::Path {
+  } elsif $source !~ Stdlib::Absolutepath {
     file { $title:
       content => $source,
       *       => $options
