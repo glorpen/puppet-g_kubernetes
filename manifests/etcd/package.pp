@@ -6,13 +6,13 @@ class g_kubernetes::etcd::package {
   $ensure = $::g_kubernetes::etcd::ensure
   $version = $::g_kubernetes::etcd::package_version
   $checksum = $::g_kubernetes::etcd::package_checksum
+  $user = $::g_kubernetes::etcd::user
 
   $ensure_directory = $ensure?{
     'present' => 'directory',
     default => 'absent'
   }
 
-  $user = 'etcd'
 
   $checksums = {
     '3.4.10' => '621172ab3b8e122d174507406e98d1cb75dcbb77'

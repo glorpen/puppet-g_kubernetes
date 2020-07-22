@@ -1,0 +1,17 @@
+[Unit]
+Description=Etcd Server
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+WorkingDirectory=<%=$data_dir %>
+User=<%=$user %>
+# set GOMAXPROCS to number of processors
+ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) <%=$bin_path %> --config-file=\"<%=$config_file %>\""
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

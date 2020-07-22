@@ -11,6 +11,9 @@ class g_kubernetes::etcd(
   Hash $options = {},
   Enum['present', 'absent'] $ensure = 'present',
 
+  String $user = 'etcd',
+  Optional[Stdlib::AbsolutePath] $unmanaged_etcd_bin = undef,
+
   Boolean $package_manage = true,
   String $package_version = '3.4.10',
   Optional[String] $package_checksum = undef,
@@ -72,28 +75,4 @@ class g_kubernetes::etcd(
     ->Class['G_kubernetes::Etcd::Config']
     ->Class['G_kubernetes::Etcd::Package']
   }
-
-# ETCD_DATA_DIR="/var/lib/etcd/default.etcd"
-# ETCD_LISTEN_CLIENT_URLS="http://localhost:2379"
-# ETCD_NAME="default"
-# ETCD_ADVERTISE_CLIENT_URLS="http://localhost:2379"
-# cat /usr/lib/systemd/system/etcd.service
-# [Unit]
-# Description=Etcd Server
-# After=network.target
-# After=network-online.target
-# Wants=network-online.target
-
-# [Service]
-# Type=notify
-# WorkingDirectory=/var/lib/etcd/
-# EnvironmentFile=-/etc/etcd/etcd.conf
-# User=etcd
-# # set GOMAXPROCS to number of processors
-# ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) /usr/bin/etcd --name=\"${ETCD_NAME}\" --data-dir=\"${ETCD_DATA_DIR}\" --listen-client-urls=\"${ETCD_LISTEN_CLIENT_URLS}\""
-# Restart=on-failure
-# LimitNOFILE=65536
-
-# [Install]
-# WantedBy=multi-user.target
 }
