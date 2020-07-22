@@ -57,16 +57,28 @@ class g_kubernetes::etcd::config {
     )
   }
 
+  if $::g_kubernetes::etcd::client_auto_tls or $::g_kubernetes::etcd::client_ca_cert {
+    $_client_schema = 'https'
+  } else {
+    $_client_schema = 'http'
+  }
+
+  if $::g_kubernetes::etcd::peer_auto_tls or $::g_kubernetes::etcd::peer_ca_cert {
+    $_peer_schema = 'https'
+  } else {
+    $_peer_schema = 'http'
+  }
+
 
   $_config = merge({
     'name' => $::fqdn,
     'data-dir' => $data_dir,
     # 'wal-dir' => $wal_dir,
-    'listen-peer-urls' => "https://${cluster_addr}:${peer_port}",
-    'listen-client-urls' => "https://${cluster_addr}:${client_port}",
-    'initial-advertise-peer-urls' => "https://${cluster_addr}:${peer_port}",
-    'advertise-client-urls' => "https://${cluster_addr}:${client_port}",
-    'initial-cluster' => $servers.map |$name, $ip| { "${name}=https://${ip}:${peer_port}" }.join(','),
+    'listen-peer-urls' => "${_peer_schema}://${cluster_addr}:${peer_port}",
+    'listen-client-urls' => "${_client_schema}://${cluster_addr}:${client_port}",
+    'initial-advertise-peer-urls' => "${_peer_schema}://${cluster_addr}:${peer_port}",
+    'advertise-client-urls' => "${_client_schema}://${cluster_addr}:${client_port}",
+    'initial-cluster' => $servers.map |$name, $ip| { "${name}=${_peer_schema}://${ip}:${peer_port}" }.join(','),
     'initial-cluster-token' => 'etcd-cluster',
     'initial-cluster-state' => 'new',
     'enable-v2' => false,
