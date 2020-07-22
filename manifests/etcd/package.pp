@@ -74,6 +74,9 @@ class g_kubernetes::etcd::package {
     creates       => "/opt/etcd/share/${pkg_name}/etcd",
     cleanup       => true,
   }
+  ->file { "/opt/etcd/share/${pkg_name}":
+    ensure => directory
+  }
 
   ['etcdctl', 'etcd'].each | $f | {
     file { "/opt/etcd/bin/${f}":
