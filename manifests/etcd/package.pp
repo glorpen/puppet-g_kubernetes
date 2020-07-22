@@ -8,6 +8,8 @@ class g_kubernetes::etcd::package {
   $checksum = $::g_kubernetes::etcd::package_checksum
   $user = $::g_kubernetes::etcd::user
 
+  $bin_dir = '/opt/etcd/bin'
+
   $ensure_directory = $ensure?{
     'present' => 'directory',
     default => 'absent'
@@ -63,7 +65,7 @@ class g_kubernetes::etcd::package {
     group  => $user
   }
 
-  file { ['/opt/etcd', '/opt/etcd/share', '/opt/etcd/bin']:
+  file { ['/opt/etcd', '/opt/etcd/share', $bin_dir]:
     ensure       => $ensure_directory,
     recurse      => true,
     recurselimit => 1,
@@ -90,7 +92,7 @@ class g_kubernetes::etcd::package {
   }
 
   ['etcdctl', 'etcd'].each | $f | {
-    file { "/opt/etcd/bin/${f}":
+    file { "${bin_dir}/${f}":
       ensure  => $ensure_symlink,
       require => Archive[$archive],
       target  => "/opt/etcd/share/${pkg_name}/${f}"
