@@ -54,6 +54,7 @@ class g_kubernetes::etcd::package {
 
   file { ['/opt/etcd', '/opt/etcd/share', '/opt/etcd/bin']:
     ensure       => directory,
+    recurse      => true,
     recurselimit => 1,
     force        => true,
     purge        => true
