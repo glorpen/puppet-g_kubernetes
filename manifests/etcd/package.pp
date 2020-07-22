@@ -12,6 +12,10 @@ class g_kubernetes::etcd::package {
     'present' => 'directory',
     default => 'absent'
   }
+  $ensure_symlink = $ensure?{
+    'present' => 'symlink',
+    default => 'absent'
+  }
 
 
   $checksums = {
@@ -52,8 +56,15 @@ class g_kubernetes::etcd::package {
     gid     => $user
   }
 
+  file { $data_dir:
+    ensure => $ensure_directory,
+    force  => true,
+    owner  => $user,
+    group  => $user
+  }
+
   file { ['/opt/etcd', '/opt/etcd/share', '/opt/etcd/bin']:
-    ensure       => directory,
+    ensure       => $ensure_directory,
     recurse      => true,
     recurselimit => 1,
     force        => true,
@@ -63,7 +74,7 @@ class g_kubernetes::etcd::package {
   $pkg_name = "etcd-v${version}-linux-amd64"
   $archive = "/opt/etcd/share/etcd-${version}.tar.gz"
   archive { $archive:
-    ensure        => present,
+    ensure        => $ensure,
     source        => "https://github.com/etcd-io/etcd/releases/download/v${version}/${pkg_name}.tar.gz",
     extract       => true,
     extract_path  => '/opt/etcd/share/',
@@ -80,7 +91,7 @@ class g_kubernetes::etcd::package {
 
   ['etcdctl', 'etcd'].each | $f | {
     file { "/opt/etcd/bin/${f}":
-      ensure  => 'symlink',
+      ensure  => $ensure_symlink,
       require => Archive[$archive],
       target  => "/opt/etcd/share/${pkg_name}/${f}"
     }

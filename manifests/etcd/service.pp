@@ -17,7 +17,7 @@ class g_kubernetes::etcd::service {
 
   systemd::unit_file { 'etcd.service':
     ensure  => $ensure,
-    content => epp('templates/etcd/systemd-unit.epp', {
+    content => epp('g_kubernetes/etcd/systemd-unit.epp', {
       'data_dir'    => $::g_kubernetes::etcd::data_dir,
       'user'        => $::g_kubernetes::etcd::user,
       'bin_path'    => $_bin_path,
