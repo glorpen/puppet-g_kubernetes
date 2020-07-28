@@ -113,7 +113,7 @@ class g_kubernetes::etcd(
 
       $config = merge($rule_config, {
         dport => $::g_kubernetes::etcd::peer_port,
-        tag => ['g_kubernetes::etcd::peer']
+        tag => 'g_kubernetes::etcd::peer'
       })
       $rule_name = "006 Allow inbound ETCD peer from ${::fqdn}"
 
@@ -130,11 +130,10 @@ class g_kubernetes::etcd(
         }
       }
 
-      G_firewall::Ipv4 <<| tag == 'g_kubernetes::etcd::peer' |>> {
-        chain  => 'ETCD-PEER'
-      }
-      G_firewall::Ipv6 <<| tag == 'g_kubernetes::etcd::peer' |>> {
-        chain  => 'ETCD-PEER'
+      puppetdb_query("resources[type, title, parameters]{exported=true and tag='g_kubernetes::etcd::peer' and certname !='${trusted['certname']}'}").each | $info | {
+        ensure_resource($info['type'], $info['title'], merge($info['parameters'], {
+          chain  => 'ETCD-PEER'
+        }))
       }
     }
   }
