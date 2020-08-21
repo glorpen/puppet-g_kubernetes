@@ -117,7 +117,10 @@ class g_kubernetes::etcd(
         }
       }
 
-      puppetdb_query("resources[type, title, parameters]{exported=true and tag='g_kubernetes::etcd::peer' and certname !='${trusted['certname']}'}").each | $info | {
+      puppetdb_query("resources[type, title, parameters]{
+        exported=true and tag='g_kubernetes::etcd::peer' and certname !='${trusted['certname']}'
+        and type='G_firewall'
+      }").each | $info | {
         ensure_resource($info['type'], $info['title'], merge($info['parameters'], {
           chain  => 'ETCD-PEER'
         }))
