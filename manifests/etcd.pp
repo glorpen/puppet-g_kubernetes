@@ -108,8 +108,8 @@ class g_kubernetes::etcd(
         tag => 'g_kubernetes::etcd::peer'
       })
 
-      $ips.each | $ip | {
-        $rule_name = "106 Allow inbound ETCD peer from ${::trusted['certname']} (${ip})"
+      $ips.each | $index, $ip | {
+        $rule_name = "106 Allow inbound ETCD peer from ${::trusted['certname']} (${index})"
         @@g_firewall { $rule_name:
           source        => $ip,
           proto_from_ip => $ip,
