@@ -104,7 +104,7 @@ class g_kubernetes::etcd::config {
       }
     })
   } else {
-    $_servers = $servers.map |$name, $ip| { "${name}=${_peer_schema}://${ip}:${peer_port}" }.join(',')
+    $_servers = $servers.map |$name, $ip| { "${name}=${_peer_schema}://${ip}:${peer_port}" }
   }
 
   $_config = merge({
@@ -113,7 +113,7 @@ class g_kubernetes::etcd::config {
     # 'wal-dir' => $wal_dir,
     'initial-advertise-peer-urls' => "${_peer_schema}://${cluster_addr}:${peer_port}",
     'advertise-client-urls' => "${_client_schema}://${cluster_addr}:${client_port}",
-    'initial-cluster' => $_servers,
+    'initial-cluster' => $_servers.join(','),
     'initial-cluster-token' => 'etcd-cluster',
     'initial-cluster-state' => 'new',
     'enable-v2' => false,
