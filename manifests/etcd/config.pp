@@ -92,13 +92,28 @@ class g_kubernetes::etcd::config {
     ]
   })
 
+  @@g_kubernetes::etcd::peer { $::trusted['certname']:
+    ensure    => $ensure,
+    peer_urls => ["${_peer_schema}://${cluster_addr}:${peer_port}"]
+  }
+
+  if $servers == undef {
+    $_servers = flatten(puppetdb_query("resources[title, parameters]{exported=true and type='G_kubernetes::Etcd::Peer' and parameters.ensure='present' }").map | $info | {
+      $info['parameters']['peer_urls'].map | $url | {
+        "${info['title']}=${url}"
+      }
+    })
+  } else {
+    $_servers = $servers.map |$name, $ip| { "${name}=${_peer_schema}://${ip}:${peer_port}" }.join(',')
+  }
+
   $_config = merge({
     'name' => $::fqdn,
     'data-dir' => $data_dir,
     # 'wal-dir' => $wal_dir,
     'initial-advertise-peer-urls' => "${_peer_schema}://${cluster_addr}:${peer_port}",
     'advertise-client-urls' => "${_client_schema}://${cluster_addr}:${client_port}",
-    'initial-cluster' => $servers.map |$name, $ip| { "${name}=${_peer_schema}://${ip}:${peer_port}" }.join(','),
+    'initial-cluster' => $_servers,
     'initial-cluster-token' => 'etcd-cluster',
     'initial-cluster-state' => 'new',
     'enable-v2' => false,
