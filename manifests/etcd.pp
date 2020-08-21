@@ -99,6 +99,8 @@ class g_kubernetes::etcd(
         ['', '6'].map |$t| {
           $_network_info["bindings${t}"].map | $c | {
             $c['address']
+          }.filter | $i | {
+            $i !~ G_kubernetes::Ipv6LinkLocal
           }
         }
       })
@@ -109,8 +111,7 @@ class g_kubernetes::etcd(
       })
 
       $ips.each | $index, $ip | {
-        $rule_name = "106 Allow inbound ETCD peer from ${::trusted['certname']} (${index})"
-        @@g_firewall { $rule_name:
+        @@g_firewall { "106 Allow inbound ETCD peer from ${::trusted['certname']} (${index})":
           source        => $ip,
           proto_from_ip => $ip,
           *             => $config
