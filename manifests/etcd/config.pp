@@ -59,6 +59,7 @@ class g_kubernetes::etcd::config {
   }
 
   if $servers == undef {
+    # etcd needs own name in initial-cluster so we assume that there was noop-run beforehand
     $_servers = flatten(puppetdb_query("resources[title, parameters]{
       exported=true and type='G_kubernetes::Etcd::Node::Peer'
     }").map | $info | {
