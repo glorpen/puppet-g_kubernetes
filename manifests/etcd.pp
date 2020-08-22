@@ -97,9 +97,11 @@ class g_kubernetes::etcd(
   if $ensure == 'present' {
     Class['G_kubernetes::Etcd::Package']
     ->Class['G_kubernetes::Etcd::Config']
+    ->Class['G_kubernetes::Etcd::Firewall']
     ~>Class['G_kubernetes::Etcd::Service']
   } else {
     Class['G_kubernetes::Etcd::Service']
+    ->Class['G_kubernetes::Etcd::Firewall']
     ->Class['G_kubernetes::Etcd::Package']
     ->Class['G_kubernetes::Etcd::Config']
   }
