@@ -75,11 +75,12 @@ class g_kubernetes::etcd(
   $peer_ips = $_ips[0]
   $client_ips = $_ips[1]
 
-  @@g_kubernetes::etcd::peer { $::trusted['certname']:
-    ensure => $ensure,
-    ips    => $peer_ips,
-    port   => $peer_port,
-    schema => $peer_schema,
+  if $ensure == 'present' {
+    @@g_kubernetes::etcd::node::peer { $::trusted['certname']:
+      ips    => $peer_ips,
+      port   => $peer_port,
+      schema => $peer_schema,
+    }
   }
 
   if $package_manage {

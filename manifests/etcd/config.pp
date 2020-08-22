@@ -60,7 +60,7 @@ class g_kubernetes::etcd::config {
 
   if $servers == undef {
     $_servers = flatten(puppetdb_query("resources[title, parameters]{
-      exported=true and type='G_kubernetes::Etcd::Peer' and parameters.ensure='present'
+      exported=true and type='G_kubernetes::Etcd::Node::Peer'
     }").map | $info | {
       enclose_ipv6($info['parameters']['ips']).map | $ip | {
         "${info['title']}=${info['schema']}://${ip}:${info['port']}"

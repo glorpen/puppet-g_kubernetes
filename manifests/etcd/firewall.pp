@@ -34,8 +34,8 @@ class g_kubernetes::etcd::firewall {
       }
 
       puppetdb_query("resources[title, parameters]{
-        exported=true and and certname!='${trusted['certname']}'
-        and type='G_kubernetes::Etcd::Node::Peer' and parameters.ensure=='present'
+        exported=true and certname!='${trusted['certname']}'
+        and type='G_kubernetes::Etcd::Node::Peer'
       }").each | $info | {
         $info['parameters']['ips'].each | $index, $ip | {
           g_firewall { "106 Allow inbound ETCD peer from ${info['title']} #${index}":
@@ -74,10 +74,10 @@ class g_kubernetes::etcd::firewall {
 
       puppetdb_query("resources[title, parameters]{
         exported=true and certname !='${trusted['certname']}'
-        and type='G_kubernetes::Etcd::Client'
+        and type='G_kubernetes::Etcd::Node::Client'
       }").each | $info | {
         $info['parameters']['ips'].each | $index, $ip | {
-          g_firewall { "106 Allow inbound ETCD client from ${title} #${index}":
+          g_firewall { "106 Allow inbound ETCD client from ${info['title']} #${index}":
             source        => $ip,
             proto_from_ip => $ip,
             chain         => 'ETCD-CLIENT',
