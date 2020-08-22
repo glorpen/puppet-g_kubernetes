@@ -7,9 +7,9 @@ class g_kubernetes::etcd::config {
   $options = $::g_kubernetes::etcd::options
   $servers = $::g_kubernetes::etcd::servers
   $client_port = $::g_kubernetes::etcd::client_port
-  $client_schema = $::g_kubernetes::etcd::client_schema
+  $client_scheme = $::g_kubernetes::etcd::client_scheme
   $peer_port = $::g_kubernetes::etcd::peer_port
-  $peer_schema = $::g_kubernetes::etcd::peer_schema
+  $peer_scheme = $::g_kubernetes::etcd::peer_scheme
   $ensure = $::g_kubernetes::etcd::ensure
 
   $_configs = ['peer', 'client'].map | $type | {
@@ -63,11 +63,11 @@ class g_kubernetes::etcd::config {
       exported=true and type='G_kubernetes::Etcd::Node::Peer'
     }").map | $info | {
       enclose_ipv6($info['parameters']['ips']).map | $ip | {
-        "${info['title']}=${info['schema']}://${ip}:${info['port']}"
+        "${info['title']}=${info['parameters']['scheme']}://${ip}:${info['parameters']['port']}"
       }
     })
   } else {
-    $_servers = $servers.map |$name, $ip| { "${name}=${peer_schema}://${ip}:${peer_port}" }
+    $_servers = $servers.map |$name, $ip| { "${name}=${peer_scheme}://${ip}:${peer_port}" }
   }
 
   $_config = merge({
@@ -75,10 +75,10 @@ class g_kubernetes::etcd::config {
     'data-dir' => $data_dir,
     # 'wal-dir' => $wal_dir,
     'initial-advertise-peer-urls' => enclose_ipv6($::g_kubernetes::etcd::peer_ips).map |$ip| {
-      "${peer_schema}://${ip}:${peer_port}"
+      "${peer_scheme}://${ip}:${peer_port}"
     }.join(','),
     'advertise-client-urls' => enclose_ipv6($::g_kubernetes::etcd::peer_ips).map |$ip| {
-      "${client_schema}://${ip}:${client_port}"
+      "${client_scheme}://${ip}:${client_port}"
     }.join(','),
     'initial-cluster' => $_servers.join(','),
     'initial-cluster-token' => 'etcd-cluster',
@@ -88,8 +88,8 @@ class g_kubernetes::etcd::config {
     'proxy' => 'off',
     'client-transport-security' => $_configs[0],
     'peer-transport-security' => $_configs[1],
-    'listen-client-urls' => "${client_schema}://0.0.0.0:${client_port}",
-    'listen-peer-urls' => "${peer_schema}://0.0.0.0:${peer_port}"
+    'listen-client-urls' => "${client_scheme}://0.0.0.0:${client_port}",
+    'listen-peer-urls' => "${peer_scheme}://0.0.0.0:${peer_port}"
   }, $options)
 
   file { $config_file:

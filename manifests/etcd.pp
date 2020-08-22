@@ -48,15 +48,15 @@ class g_kubernetes::etcd(
 
 
   if $client_auto_tls or $client_ca_cert {
-    $client_schema = 'https'
+    $client_scheme = 'https'
   } else {
-    $client_schema = 'http'
+    $client_scheme = 'http'
   }
 
   if $peer_auto_tls or $peer_ca_cert {
-    $peer_schema = 'https'
+    $peer_scheme = 'https'
   } else {
-    $peer_schema = 'http'
+    $peer_scheme = 'http'
   }
 
   $_ips = ['peer', 'client'].map | $type | {
@@ -79,7 +79,7 @@ class g_kubernetes::etcd(
     @@g_kubernetes::etcd::node::peer { $::trusted['certname']:
       ips    => $peer_ips,
       port   => $peer_port,
-      schema => $peer_schema,
+      scheme => $peer_scheme,
     }
   }
 
