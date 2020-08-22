@@ -4,12 +4,14 @@
 #   Open swarm ports to whole cluster_iface ('interface') or for each other peer node separately ('peer').
 #
 class g_kubernetes::etcd(
-  Stdlib::Host $cluster_addr,
   Optional[Hash[String, Stdlib::Host]] $servers = undef,
   Integer $client_port = 2379,
   G_server::Side $client_side = 'internal',
+  Enum['interface', 'node', 'none'] $client_firewall_mode = 'interface',
   Integer $peer_port = 2380,
   G_server::Side $peer_side = 'internal',
+  Enum['interface', 'node', 'none'] $peer_firewall_mode = 'interface',
+
   String $data_dir = '/var/lib/etcd',
   String $config_dir = '/etc/etcd',
   # Optional[String] $wal_dir = undef,
@@ -23,8 +25,6 @@ class g_kubernetes::etcd(
   String $package_version = '3.4.10',
   Optional[String] $package_checksum = undef,
   Boolean $service_manage = true,
-  Boolean $manage_firewall = true,
-  Enum['interface', 'peer'] $firewall_mode = 'interface',
 
   Optional[G_kubernetes::CertSource] $client_ca_cert = undef,
   Optional[G_kubernetes::CertSource] $client_cert = undef,
@@ -46,6 +46,42 @@ class g_kubernetes::etcd(
   $ssl_dir = "${config_dir}/ssl"
   $config_file = "${config_dir}/etc.yaml"
 
+
+  if $client_auto_tls or $client_ca_cert {
+    $client_schema = 'https'
+  } else {
+    $client_schema = 'http'
+  }
+
+  if $peer_auto_tls or $peer_ca_cert {
+    $peer_schema = 'https'
+  } else {
+    $peer_schema = 'http'
+  }
+
+  $_ips = ['peer', 'client'].map | $type | {
+    $side = getvar("${type}_side")
+    flatten(g_server::get_interfaces($side).map | $iface | {
+      $_network_info = $::facts['networking']['interfaces'][$iface]
+      ['', '6'].map |$t| {
+        $_network_info["bindings${t}"].map | $c | {
+          $c['address']
+        }.filter | $i | {
+          $i !~ G_kubernetes::Ipv6LinkLocal
+        }
+      }
+    })
+  }
+  $peer_ips = $_ips[0]
+  $client_ips = $_ips[1]
+
+  @@g_kubernetes::etcd::peer { $::trusted['certname']:
+    ensure => $ensure,
+    ips    => $peer_ips,
+    port   => $peer_port,
+    schema => $peer_schema,
+  }
+
   if $package_manage {
     include ::g_kubernetes::etcd::package
   }
@@ -55,79 +91,7 @@ class g_kubernetes::etcd(
   }
 
   include ::g_kubernetes::etcd::config
-
-  if $manage_firewall {
-    $rule_config = {
-      'proto'  => tcp,
-      'action' => accept,
-    }
-
-    if $firewall_mode == 'interface' {
-      ['peer', 'client'].each | $type | {
-        $side = getvar("::g_kubernetes::etcd::${type}_side")
-        $port = getvar("::g_kubernetes::etcd::${type}_port")
-
-        g_server::get_interfaces($side).each | $iface | {
-          g_firewall { "106 Allow inbound ETCD ${type} from ${iface}":
-            dport   => $port,
-            iniface => $iface,
-            *       => $rule_config
-          }
-        }
-      }
-    } else {
-      g_server::get_interfaces($::g_kubernetes::etcd::client_side).each | $iface | {
-        g_firewall { "106 Allow inbound ETCD client from ${iface}":
-          dport   => $::g_kubernetes::etcd::client_port,
-          iniface => $iface,
-          *       => $rule_config
-        }
-      }
-
-      firewallchain { 'ETCD-PEER:filter:IPv4': purge  => true }
-      firewallchain { 'ETCD-PEER:filter:IPv6': purge  => true }
-
-      g_server::get_interfaces($::g_kubernetes::etcd::peer_side).each | $iface | {
-        g_firewall { "106 Allow inbound ETCD peer from nodes on ${iface}":
-          jump    => 'ETCD-PEER',
-          iniface => $iface
-        }
-      }
-
-      $ips = flatten(g_server::get_interfaces($::g_kubernetes::etcd::peer_side).map | $iface | {
-        $_network_info = $::facts['networking']['interfaces'][$iface]
-        ['', '6'].map |$t| {
-          $_network_info["bindings${t}"].map | $c | {
-            $c['address']
-          }.filter | $i | {
-            $i !~ G_kubernetes::Ipv6LinkLocal
-          }
-        }
-      })
-
-      $config = merge($rule_config, {
-        dport => $::g_kubernetes::etcd::peer_port,
-        tag => 'g_kubernetes::etcd::peer'
-      })
-
-      $ips.each | $index, $ip | {
-        @@g_firewall { "106 Allow inbound ETCD peer from ${::trusted['certname']} (${index})":
-          source        => $ip,
-          proto_from_ip => $ip,
-          *             => $config
-        }
-      }
-
-      puppetdb_query("resources[type, title, parameters]{
-        exported=true and tag='g_kubernetes::etcd::peer' and certname !='${trusted['certname']}'
-        and type='G_firewall'
-      }").each | $info | {
-        ensure_resource($info['type'], $info['title'], merge($info['parameters'], {
-          chain  => 'ETCD-PEER'
-        }))
-      }
-    }
-  }
+  include ::g_kubernetes::etcd::firewall
 
   if $ensure == 'present' {
     Class['G_kubernetes::Etcd::Package']
