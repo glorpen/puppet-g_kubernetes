@@ -14,10 +14,6 @@ class g_kubernetes::etcd::package {
     'present' => 'directory',
     default => 'absent'
   }
-  $ensure_symlink = $ensure?{
-    'present' => 'symlink',
-    default => 'absent'
-  }
 
 
   $checksums = {
@@ -28,15 +24,12 @@ class g_kubernetes::etcd::package {
 
   $_checksum = pick_default($checksum, $checksums[$version])
 
-  file { $config_dir:
+  file { [$ssl_dir, $config_dir]:
     ensure => $ensure_directory,
     owner  => $user,
-    group  => $user
-  }
-  file { $ssl_dir:
-    ensure => $ensure_directory,
-    owner  => $user,
-    group  => $user
+    group  => $user,
+    force  => true,
+    purge  => true
   }
 
   if $ensure == 'present' {
@@ -58,6 +51,11 @@ class g_kubernetes::etcd::package {
     gid     => $user
   }
 
+  if $ensure == 'absent' {
+    User[$user]
+    ->Group[$user]
+  }
+
   file { $data_dir:
     ensure => $ensure_directory,
     force  => true,
@@ -76,27 +74,28 @@ class g_kubernetes::etcd::package {
 
   $pkg_name = "etcd-v${version}-linux-amd64"
   $archive = "/opt/etcd/share/etcd-${version}.tar.gz"
-  archive { $archive:
-    ensure        => $ensure,
-    source        => "https://github.com/etcd-io/etcd/releases/download/v${version}/${pkg_name}.tar.gz",
-    extract       => true,
-    extract_path  => '/opt/etcd/share/',
-    user          => 0,
-    group         => 0,
-    checksum      => $_checksum,
-    checksum_type => 'sha1',
-    creates       => "/opt/etcd/share/${pkg_name}/etcd",
-    cleanup       => true,
-  }
-  ->file { "/opt/etcd/share/${pkg_name}":
-    ensure => directory
-  }
-
-  ['etcdctl', 'etcd'].each | $f | {
-    file { "${bin_dir}/${f}":
-      ensure  => $ensure_symlink,
-      require => Archive[$archive],
-      target  => "/opt/etcd/share/${pkg_name}/${f}"
+  if $ensure == 'present' {
+    archive { $archive:
+      source        => "https://github.com/etcd-io/etcd/releases/download/v${version}/${pkg_name}.tar.gz",
+      extract       => true,
+      extract_path  => '/opt/etcd/share/',
+      user          => 0,
+      group         => 0,
+      checksum      => $_checksum,
+      checksum_type => 'sha1',
+      creates       => "/opt/etcd/share/${pkg_name}/etcd",
+      cleanup       => true,
+    }
+    ->file { "/opt/etcd/share/${pkg_name}":
+      ensure => directory
+    }
+    ['etcdctl', 'etcd'].each | $f | {
+      file { "${bin_dir}/${f}":
+        ensure  => 'symlink',
+        require => Archive[$archive],
+        target  => "/opt/etcd/share/${pkg_name}/${f}"
+      }
     }
   }
+
 }

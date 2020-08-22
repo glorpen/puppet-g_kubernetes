@@ -1,5 +1,6 @@
 class g_kubernetes::etcd::firewall {
 
+  $ensure = $::g_kubernetes::etcd::ensure
   $peer_firewall_mode = $::g_kubernetes::etcd::peer_firewall_mode
   $peer_side = $::g_kubernetes::etcd::peer_side
   $peer_port = $::g_kubernetes::etcd::peer_port
@@ -16,6 +17,7 @@ class g_kubernetes::etcd::firewall {
     'interface': {
       g_server::get_interfaces($peer_side).each | $iface | {
         g_firewall { "106 Allow inbound ETCD peer from ${iface}":
+          ensure  => $ensure,
           dport   => $peer_port,
           iniface => $iface,
           *       => $rule_config
@@ -23,27 +25,19 @@ class g_kubernetes::etcd::firewall {
       }
     }
     'node': {
-      firewallchain { 'ETCD-PEER:filter:IPv4': purge  => true }
-      firewallchain { 'ETCD-PEER:filter:IPv6': purge  => true }
-
-      g_server::get_interfaces($peer_side).each | $iface | {
-        g_firewall { "106 Allow inbound ETCD peer from nodes on ${iface}":
-          jump    => 'ETCD-PEER',
-          iniface => $iface
-        }
-      }
-
       puppetdb_query("resources[title, parameters]{
         exported=true and certname!='${trusted['certname']}'
         and type='G_kubernetes::Etcd::Node::Peer'
       }").each | $info | {
-        $info['parameters']['ips'].each | $index, $ip | {
-          g_firewall { "106 Allow inbound ETCD peer from ${info['title']} #${index}":
-            source        => $ip,
-            proto_from_ip => $ip,
-            dport         => $peer_port,
-            chain         => 'ETCD-PEER',
-            *             => $rule_config
+        g_server::get_interfaces($peer_side).each | $iface | {
+          $info['parameters']['ips'].each | $index, $ip | {
+            g_firewall { "106 Allow inbound ETCD peer from ${info['title']} #${index} on ${iface}":
+              ensure        => $ensure,
+              source        => $ip,
+              proto_from_ip => $ip,
+              dport         => $peer_port,
+              *             => $rule_config
+            }
           }
         }
       }
@@ -55,6 +49,7 @@ class g_kubernetes::etcd::firewall {
     'interface': {
       g_server::get_interfaces($client_side).each | $iface | {
         g_firewall { "106 Allow inbound ETCD client from ${iface}":
+          ensure  => $ensure,
           dport   => $client_port,
           iniface => $iface,
           *       => $rule_config
@@ -62,27 +57,19 @@ class g_kubernetes::etcd::firewall {
       }
     }
     'node': {
-      firewallchain { 'ETCD-CLIENT:filter:IPv4': purge  => true }
-      firewallchain { 'ETCD-CLIENT:filter:IPv6': purge  => true }
-
-      g_server::get_interfaces($peer_side).each | $iface | {
-        g_firewall { "106 Allow inbound ETCD client from nodes on ${iface}":
-          jump    => 'ETCD-CLIENT',
-          iniface => $iface
-        }
-      }
-
       puppetdb_query("resources[title, parameters]{
         exported=true and certname !='${trusted['certname']}'
         and type='G_kubernetes::Etcd::Node::Client'
       }").each | $info | {
-        $info['parameters']['ips'].each | $index, $ip | {
-          g_firewall { "106 Allow inbound ETCD client from ${info['title']} #${index}":
-            source        => $ip,
-            proto_from_ip => $ip,
-            chain         => 'ETCD-CLIENT',
-            dport         => $client_port,
-            *             => $rule_config
+        g_server::get_interfaces($client_side).each | $iface | {
+          $info['parameters']['ips'].each | $index, $ip | {
+            g_firewall { "106 Allow inbound ETCD client from ${info['title']} #${index} on ${iface}":
+              ensure        => $ensure,
+              source        => $ip,
+              proto_from_ip => $ip,
+              dport         => $client_port,
+              *             => $rule_config
+            }
           }
         }
       }
