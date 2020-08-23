@@ -22,7 +22,7 @@ class g_kubernetes::vault (
   Optional[G_kubernetes::CertSource] $client_ca_cert = undef,
 
   Enum['interface', 'peer', 'none'] $firewall_peer_mode = 'interface',
-  Enum['interface', 'peer', 'none'] $firewall_api_mode = 'interface',
+  Enum['interface', 'client', 'none'] $firewall_api_mode = 'interface',
 ) {
   $ssl_dir = "${config_dir}/ssl"
 

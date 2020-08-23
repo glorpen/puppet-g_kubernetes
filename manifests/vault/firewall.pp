@@ -9,7 +9,7 @@ class g_kubernetes::vault::firewall {
     'interface': {
       g_server::get_interfaces($peer_side).map | $iface | {
         g_firewall { "105 allow Vault server-server communication on ${iface}":
-          dports  => [$peer_port],
+          dport   => $peer_port,
           iniface => $iface
         }
       }
@@ -21,10 +21,10 @@ class g_kubernetes::vault::firewall {
         g_server::get_interfaces($peer_side).map | $iface | {
           $info['parameters']['ips'].each | $index, $ip | {
             g_firewall::ipv4 { "105 allow Vault api communication on ${iface} for ${info['title']} #${index}":
-              dports        => [$peer_port],
+              dport         => $peer_port,
               iniface       => $iface,
               source        => $ip,
-              action        => 'ACCEPT',
+              action        => 'accept',
               proto_from_ip => $ip
             }
           }
@@ -38,23 +38,23 @@ class g_kubernetes::vault::firewall {
     'interface': {
       g_server::get_interfaces($api_side).map | $iface | {
         g_firewall { "105 allow Vault api communication on ${iface}":
-          dports  => [$api_port],
+          dport   => $api_port,
           iniface => $iface,
-          action  => 'ACCEPT'
+          action  => 'accept'
         }
       }
     }
-    'peer': {
+    'client': {
       puppetdb_query("resources[title, parameters] {
         type='G_kubernetes::Vault::Client' and exported=true
       }").each | $info | {
         g_server::get_interfaces($api_side).map | $iface | {
           $info['parameters']['ips'].each | $index, $ip | {
             g_firewall { "105 allow Vault api communication on ${iface} for ${info['title']} #${index}":
-              dports        => [$api_port],
+              dport         => $api_port,
               iniface       => $iface,
               source        => $ip,
-              action        => 'ACCEPT',
+              action        => 'accept',
               proto_from_ip => $ip
             }
           }
