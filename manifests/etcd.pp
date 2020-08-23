@@ -77,9 +77,12 @@ class g_kubernetes::etcd(
 
   if $ensure == 'present' {
     @@g_kubernetes::etcd::node::peer { $::trusted['certname']:
-      ips    => $peer_ips,
-      port   => $peer_port,
-      scheme => $peer_scheme,
+      ips           => $peer_ips,
+      port          => $peer_port,
+      scheme        => $peer_scheme,
+      client_ips    => $client_ips,
+      client_port   => $client_port,
+      client_scheme => $client_scheme
     }
   }
 
