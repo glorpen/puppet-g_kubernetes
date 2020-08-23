@@ -2,15 +2,13 @@ class g_kubernetes::vault::config {
   include ::stdlib
 
   $api_port = $::g_kubernetes::vault::api_port
-  $cluster_port = $::g_kubernetes::vault::cluster_port
-  $cluster_side = $::g_kubernetes::vault::cluster_side
+  $peer_port = $::g_kubernetes::vault::peer_port
   $ssl_dir = $::g_kubernetes::vault::ssl_dir
   $node_key = $::g_kubernetes::vault::node_key
   $node_cert = $::g_kubernetes::vault::node_cert
   $client_ca_cert = $::g_kubernetes::vault::client_ca_cert
   $conf_d_dir = "${::g_kubernetes::vault::config_dir}/conf.d"
   $ensure = $::g_kubernetes::vault::ensure
-  $cluster_ip = $::g_kubernetes::vault::cluster_ip
 
   $ensure_directory = $ensure?{
     'present' => 'directory',
@@ -24,14 +22,14 @@ class g_kubernetes::vault::config {
   }
 
   if $::g_kubernetes::vault::etcd_urls == undef {
-    $etcd_urls = puppetdb_query("resources[parameters]{exported=false and type='G_kubernetes::Etcd' }").map | $info | {
-      if $info['parameters']['client_auto_tls'] or $info['parameters']['client_ca_cert'] {
-        $client_schema = 'https'
-      } else {
-        $client_schema = 'http'
+    $etcd_urls = flatten(puppetdb_query("resources[parameters]{exported=false and type='G_kubernetes::Etcd::Node::Peer' }").map | $info | {
+      $info['parameters']['client_ips'].map |$ip| {
+        "${info['parameters']['client_scheme']}://${ip}:${info['parameters']['client_port']}"
       }
+    })
 
-      "${client_schema}://${info['parameters']['cluster_addr']}:${info['parameters']['client_port']}"
+    @@g_kubernetes::etcd::node::client { $::trusted['certname']:
+      ips => $::g_kubernetes::vault::peer_ips
     }
   } else {
     $etcd_urls = $::g_kubernetes::vault::etcd_urls
@@ -101,12 +99,12 @@ class g_kubernetes::vault::config {
   g_kubernetes::vault::config::object { 'cluster':
     ensure => $ensure,
     config => {
-      'cluster_addr' => "https://${cluster_ip}:${cluster_port}", # schema is ignored
+      'cluster_addr' => "https://${::g_kubernetes::vault::peer_ips[0]}:${peer_port}", # schema is ignored
       'listener'     => {
         'tcp' => merge(
           {
             'address'         => "0.0.0.0:${api_port}",
-            'cluster_address' => "0.0.0.0:${cluster_port}",
+            'cluster_address' => "0.0.0.0:${peer_port}",
           },
           $tls_node_options,
           $tls_client_options
