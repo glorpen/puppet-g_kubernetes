@@ -27,25 +27,7 @@ class g_kubernetes::vault (
   $ssl_dir = "${config_dir}/ssl"
 
   $_ips = ['peer', 'client'].map | $type | {
-    $side = getvar("${type}_side")
-    flatten(g_server::get_interfaces($side).map | $iface | {
-      $addrs = delete_undef_values([
-        G_server::Network::Iface[$iface]['ipv4addr'],
-        G_server::Network::Iface[$iface]['ipv6addr']
-      ])
-      if $addrs.empty() {
-        $_network_info = $::facts['networking']['interfaces'][$iface]
-        ['', '6'].map |$t| {
-          $_network_info["bindings${t}"].map | $c | {
-            $c['address']
-          }.filter | $i | {
-            $i !~ G_kubernetes::Ipv6LinkLocal
-          }
-        }
-      } else {
-        $addrs
-      }
-    })
+    g_kubernetes::get_ips(getvar("${type}_side"))
   }
   $peer_ips = $_ips[0]
   $client_ips = $_ips[1]
