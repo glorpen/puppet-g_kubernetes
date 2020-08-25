@@ -21,5 +21,16 @@ KillMode=process
 RestartSec=5
 LimitNOFILE=65536
 
+AmbientCapabilities=CAP_IPC_LOCK
+NoNewPrivileges=yes
+ProtectSystem=full
+<% if ! $disable_mlock { %>
+SecureBits=keep-caps
+Capabilities=CAP_IPC_LOCK+ep
+CapabilityBoundingSet=CAP_SYSLOG CAP_IPC_LOCK
+<% } else { %>
+CapabilityBoundingSet=CAP_SYSLOG
+<% } %>
+
 [Install]
 WantedBy=multi-user.target
