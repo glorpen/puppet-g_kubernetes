@@ -5,7 +5,7 @@ class g_kubernetes::vault::firewall {
   $api_port = $::g_kubernetes::vault::api_port
   $api_side = $::g_kubernetes::vault::api_side
 
-  case $::g_kubernetes::vault::firewall_peer_mode {
+  case $::g_kubernetes::vault::peer_firewall_mode {
     'interface': {
       g_server::get_interfaces($peer_side).map | $iface | {
         g_firewall { "105 allow Vault server-server communication on ${iface}":
@@ -34,7 +34,7 @@ class g_kubernetes::vault::firewall {
     default: {}
   }
 
-  case $::g_kubernetes::vault::firewall_api_mode {
+  case $::g_kubernetes::vault::api_firewall_mode {
     'interface': {
       g_server::get_interfaces($api_side).map | $iface | {
         g_firewall { "105 allow Vault api communication on ${iface}":
