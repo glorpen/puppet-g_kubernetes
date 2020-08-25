@@ -21,7 +21,8 @@ class g_kubernetes::etcd::service {
       'data_dir'    => $::g_kubernetes::etcd::data_dir,
       'user'        => $::g_kubernetes::etcd::user,
       'bin_path'    => $_bin_path,
-      'config_file' => $::g_kubernetes::etcd::config_file
+      'config_file' => $::g_kubernetes::etcd::config_file,
+      'threads'     => $::facts['processors']['count']
     }),
   }
 

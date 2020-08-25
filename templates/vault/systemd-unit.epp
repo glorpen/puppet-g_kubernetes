@@ -1,15 +1,25 @@
 [Unit]
-Description=Vault Server
+Description=Hashicorp Vault Server
 After=network.target
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=notify
+Type=exec
 User=<%=$user %>
-# set GOMAXPROCS to number of processors
+Group=<%=$user %>
+PrivateDevices=yes
+PrivateTmp=yes
+ProtectHome=read-only
+Environment=GOMAXPROCS=<%=$threads %>
 ExecStart=<%=$bin_path %> server -config="<%=$config_dir %>"
 Restart=on-failure
+KillSignal=SIGINT
+TimeoutStopSec=30s
+Restart=on-failure
+ExecReload=/bin/kill --signal HUP $MAINPID
+KillMode=process
+RestartSec=5
 LimitNOFILE=65536
 
 [Install]

@@ -5,13 +5,16 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=notify
+Type=exec
 WorkingDirectory=<%=$data_dir %>
 User=<%=$user %>
-# set GOMAXPROCS to number of processors
-ExecStart=/bin/bash -c "GOMAXPROCS=$(nproc) <%=$bin_path %> --config-file=\"<%=$config_file %>\""
+Group=<%=$user %>
+Environment=GOMAXPROCS=<%=$threads %>
+ExecStart=<%=$bin_path %> --config-file="<%=$config_file %>"
 Restart=on-failure
 LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
+
+# TODO: make start in background so that when cluster is initialising puppet will not wait for other servers

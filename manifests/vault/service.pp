@@ -14,7 +14,8 @@ class g_kubernetes::vault::service {
     content => epp('g_kubernetes/vault/systemd-unit.epp', {
       'user'       => $::g_kubernetes::vault::user,
       'bin_path'   => $::g_kubernetes::vault::package::vault_bin,
-      'config_dir' => $::g_kubernetes::vault::conf_d_dir
+      'config_dir' => $::g_kubernetes::vault::conf_d_dir,
+      'threads'    => $::facts['processors']['count']
     }),
   }
 
