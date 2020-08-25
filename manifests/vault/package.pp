@@ -17,7 +17,7 @@ class g_kubernetes::vault::package {
 
   $opt_dir = '/opt/vault'
   $bin_dir = "${opt_dir}/bin"
-  $share_dir = "${opt_dir}/share/"
+  $share_dir = "${opt_dir}/share"
   $vault_bin = "${bin_dir}/vault"
 
   group { $user:
