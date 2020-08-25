@@ -12,7 +12,7 @@ PrivateDevices=yes
 PrivateTmp=yes
 ProtectHome=read-only
 Environment=GOMAXPROCS=<%=$threads %>
-ExecStart=<%=$bin_path %> server -config="<%=$config_dir %>"
+ExecStart=<%=$bin_path %> server -config=<%=$config_dir %>
 Restart=on-failure
 KillSignal=SIGINT
 TimeoutStopSec=30s

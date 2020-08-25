@@ -10,7 +10,7 @@ WorkingDirectory=<%=$data_dir %>
 User=<%=$user %>
 Group=<%=$user %>
 Environment=GOMAXPROCS=<%=$threads %>
-ExecStart=<%=$bin_path %> --config-file="<%=$config_file %>"
+ExecStart=<%=$bin_path %> --config-file=<%=$config_file %>
 Restart=on-failure
 LimitNOFILE=65536
 
