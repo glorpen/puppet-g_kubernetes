@@ -52,6 +52,8 @@ class g_kubernetes::vault::package {
   $archive = "${share_dir}/vault-${version}.zip"
   $vault_source_bin = "${share_dir}/${pkg_name}/vault"
 
+  ensure_packages(['unzip'])
+
   if $ensure == 'present' {
     archive { $archive:
       ensure        => $ensure,
@@ -64,6 +66,7 @@ class g_kubernetes::vault::package {
       checksum_type => 'sha1',
       creates       => $vault_source_bin,
       cleanup       => true,
+      require       => Package['unzip'],
     }
     ->file { "${share_dir}/${pkg_name}":
       ensure => directory

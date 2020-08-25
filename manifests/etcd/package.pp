@@ -72,6 +72,8 @@ class g_kubernetes::etcd::package {
     purge        => true
   }
 
+  ensure_packages(['tar', 'gzip'])
+
   $pkg_name = "etcd-v${version}-linux-amd64"
   $archive = "/opt/etcd/share/etcd-${version}.tar.gz"
   if $ensure == 'present' {
@@ -85,6 +87,7 @@ class g_kubernetes::etcd::package {
       checksum_type => 'sha1',
       creates       => "/opt/etcd/share/${pkg_name}/etcd",
       cleanup       => true,
+      require       => [Package['tar'], Package['gzip']]
     }
     ->file { "/opt/etcd/share/${pkg_name}":
       ensure => directory
