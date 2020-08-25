@@ -17,7 +17,6 @@ class g_kubernetes::vault (
   G_server::Side $peer_side = 'internal',
   Integer $api_port = 8200,
   G_server::Side $api_side = 'internal',
-  Optional[Stdlib::Host] $cluster_addr = undef,
 
   Boolean $disable_mlock = false,
   String $log_level = 'warn',
