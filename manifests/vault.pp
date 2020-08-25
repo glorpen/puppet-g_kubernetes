@@ -12,6 +12,7 @@ class g_kubernetes::vault (
   Boolean $export_etcd_client = true,
   Stdlib::AbsolutePath $config_dir = '/etc/vault',
   String $user = 'vault',
+  Optional[Stdlib::Host] $api_advertise_host = undef,
 
   Integer $peer_port = 8201,
   G_server::Side $peer_side = 'internal',
@@ -35,6 +36,7 @@ class g_kubernetes::vault (
   $conf_d_dir = "${config_dir}/conf.d"
 
   $peer_ips = g_kubernetes::get_ips($peer_side)
+  $api_ips = g_kubernetes::get_ips($api_side)
 
   include ::g_kubernetes::vault::package
   include ::g_kubernetes::vault::config

@@ -45,10 +45,12 @@ class g_kubernetes::vault::config {
       'tls_cert_file' => g_kubernetes::certpath($ssl_dir, 'peer-cert', $node_cert), # peer cert + CA cert
       'tls_key_file' => g_kubernetes::certpath($ssl_dir, 'peer-key', $node_key),
     }
+    $_cluster_api_scheme = 'https'
   } else {
     $tls_node_options = {
       'tls_disable' => true
     }
+    $_cluster_api_scheme = 'http'
   }
 
   if $client_ca_cert {
@@ -71,7 +73,8 @@ class g_kubernetes::vault::config {
         'etcd' => {
           'address'    => $etcd_urls.join(','),
           'ha_enabled' => true,
-          'path'       => '/vault/'
+          'path'       => '/vault/',
+          'etcd_api'   => 'v3'
         }
       }
     }
@@ -100,10 +103,17 @@ class g_kubernetes::vault::config {
     }
   }
 
+  $_cluster_peer_ip = enclose_ipv6($::g_kubernetes::vault::peer_ips[0])
+  $_cluster_api_host = pick(
+    $::g_kubernetes::vault::api_advertise_host,
+    enclose_ipv6($::g_kubernetes::vault::api_ips[0])
+  )
+
   g_kubernetes::vault::config::object { 'cluster':
     ensure => $ensure,
     config => {
-      'cluster_addr' => "https://${::g_kubernetes::vault::peer_ips[0]}:${peer_port}", # schema is ignored
+      'cluster_addr' => "https://${_cluster_peer_ip}:${peer_port}", # schema is ignored
+      'api_addr'     => "${_cluster_api_scheme}://${_cluster_api_host}:${api_port}",
       'listener'     => {
         'tcp' => merge(
           {
