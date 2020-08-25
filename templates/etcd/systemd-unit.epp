@@ -16,5 +16,3 @@ LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
-
-# TODO: make start in background so that when cluster is initialising puppet will not wait for other servers
