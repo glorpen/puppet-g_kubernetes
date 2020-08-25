@@ -25,7 +25,7 @@ class g_kubernetes::vault::config {
 
   if $::g_kubernetes::vault::etcd_urls == undef {
     $etcd_urls = flatten(puppetdb_query("resources[parameters]{exported=true and type='G_kubernetes::Etcd::Node::Peer' }").map | $info | {
-      $info['parameters']['client_ips'].map |$ip| {
+      enclose_ipv6($info['parameters']['client_ips']).map |$ip| {
         "${info['parameters']['client_scheme']}://${ip}:${info['parameters']['client_port']}"
       }
     })
