@@ -18,5 +18,8 @@ function g_kubernetes::get_ips(
     } else {
       $addrs
     }
-  })
+  }).map | $ip | {
+    # remove masks
+    regsubst($ip, '/.*', '')
+  }
 }
