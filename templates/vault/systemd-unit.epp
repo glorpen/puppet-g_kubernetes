@@ -1,0 +1,16 @@
+[Unit]
+Description=Vault Server
+After=network.target
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=<%=$user %>
+# set GOMAXPROCS to number of processors
+ExecStart=<%=$bin_path %> server -config="<%=$config_dir %>"
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

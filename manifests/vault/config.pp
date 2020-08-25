@@ -7,7 +7,7 @@ class g_kubernetes::vault::config {
   $node_key = $::g_kubernetes::vault::node_key
   $node_cert = $::g_kubernetes::vault::node_cert
   $client_ca_cert = $::g_kubernetes::vault::client_ca_cert
-  $conf_d_dir = "${::g_kubernetes::vault::config_dir}/conf.d"
+  $conf_d_dir = $::g_kubernetes::vault::conf_d_dir
   $ensure = $::g_kubernetes::vault::ensure
 
   $ensure_directory = $ensure?{

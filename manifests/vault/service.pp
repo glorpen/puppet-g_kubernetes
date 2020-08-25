@@ -9,15 +9,12 @@ class g_kubernetes::vault::service {
     enable => $service_enable
   }
 
-  $_bin_path = "${::g_kubernetes::vault::package::bin_dir}/etcd"
-
   systemd::unit_file { 'vault.service':
     ensure  => $ensure,
     content => epp('g_kubernetes/vault/systemd-unit.epp', {
-      'data_dir'    => $::g_kubernetes::etcd::data_dir,
-      'user'        => $::g_kubernetes::etcd::user,
-      'bin_path'    => $_bin_path,
-      'config_file' => $::g_kubernetes::etcd::config_file
+      'user'       => $::g_kubernetes::vault::user,
+      'bin_path'   => $::g_kubernetes::vault::package::vault_bin,
+      'config_dir' => $::g_kubernetes::vault::conf_d_dir
     }),
   }
 

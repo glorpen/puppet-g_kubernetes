@@ -3,6 +3,9 @@ class g_kubernetes::vault::package {
   $version = $::g_kubernetes::vault::package_version
   $checksum = $::g_kubernetes::vault::package_checksum
   $disable_mlock = $::g_kubernetes::vault::disable_mlock
+  $user = $::g_kubernetes::vault::user
+
+  include ::stdlib
 
   $checksums = {
     '1.5.0' => 'e67df7d01d66eace1b12f314d76a0e1b1f67d028'
@@ -15,6 +18,20 @@ class g_kubernetes::vault::package {
   $opt_dir = '/opt/vault'
   $bin_dir = "${opt_dir}/bin"
   $share_dir = "${opt_dir}/share/"
+  $vault_bin = "${bin_dir}/vault"
+
+  group { $user:
+    ensure => $ensure,
+    system => true
+  }
+  user { $user:
+    ensure  => $ensure,
+    home    => '/dev/null',
+    system  => true,
+    shell   => '/sbin/nologin',
+    comment => 'vault user managed by puppet',
+    gid     => $user
+  }
 
   file { [$opt_dir, $share_dir, $bin_dir]:
     ensure       => $ensure_directory,
@@ -23,8 +40,6 @@ class g_kubernetes::vault::package {
     recurse      => true,
     recurselimit => 1,
   }
-
-  include ::stdlib
 
   $_checksum = pick_default($checksum, $checksums[$version])
   $_arch = $facts['architecture']?{
@@ -66,10 +81,13 @@ class g_kubernetes::vault::package {
       notify     => Service['vault']
     }
 
-    file { "${bin_dir}/vault":
+    file { $vault_bin:
       ensure  => 'symlink',
       require => Archive[$archive],
       target  => $vault_bin
     }
+
+    User[$user]
+    ->Group[$user]
   }
 }

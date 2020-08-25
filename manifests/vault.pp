@@ -4,6 +4,7 @@ class g_kubernetes::vault (
   Optional[String] $package_checksum = undef,
   Optional[Array[String]] $etcd_urls = undef,
   Stdlib::AbsolutePath $config_dir = '/etc/vault',
+  String $user = 'vault',
 
   Integer $peer_port = 8201,
   G_server::Side $peer_side = 'internal',
@@ -25,6 +26,7 @@ class g_kubernetes::vault (
   Enum['interface', 'client', 'none'] $firewall_api_mode = 'interface',
 ) {
   $ssl_dir = "${config_dir}/ssl"
+  $conf_d_dir = "${config_dir}/conf.d"
 
   $_ips = ['peer', 'client'].map | $type | {
     g_kubernetes::get_ips(getvar("${type}_side"))
