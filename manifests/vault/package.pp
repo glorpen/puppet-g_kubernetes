@@ -51,15 +51,19 @@ class g_kubernetes::vault::package {
   $pkg_name = "vault_${version}_linux_${_arch}"
   $archive = "${share_dir}/vault-${version}.zip"
   $vault_source_bin = "${share_dir}/${pkg_name}/vault"
+  $vault_sources = "${share_dir}/${pkg_name}"
 
   ensure_packages(['unzip'])
 
   if $ensure == 'present' {
-    archive { $archive:
+    file { $vault_sources:
+      ensure => directory
+    }
+    ->archive { $archive:
       ensure        => $ensure,
       source        => "https://releases.hashicorp.com/vault/${version}/${pkg_name}.zip",
       extract       => true,
-      extract_path  => $share_dir,
+      extract_path  => $vault_sources,
       user          => 0,
       group         => 0,
       checksum      => $_checksum,
@@ -67,9 +71,6 @@ class g_kubernetes::vault::package {
       creates       => $vault_source_bin,
       cleanup       => true,
       require       => Package['unzip'],
-    }
-    ->file { "${share_dir}/${pkg_name}":
-      ensure => directory
     }
 
     $ensure_mlock = $disable_mlock?{
