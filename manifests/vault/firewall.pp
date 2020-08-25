@@ -17,6 +17,7 @@ class g_kubernetes::vault::firewall {
     'peer': {
       puppetdb_query("resources[title, parameters] {
         type='G_kubernetes::Vault::Peer' and exported=true and parameters.ensure='present'
+        and certname!='${trusted['certname']}'
       }").each | $info | {
         g_server::get_interfaces($peer_side).map | $iface | {
           $info['parameters']['ips'].each | $index, $ip | {
@@ -47,6 +48,7 @@ class g_kubernetes::vault::firewall {
     'client': {
       puppetdb_query("resources[title, parameters] {
         type='G_kubernetes::Vault::Client' and exported=true
+        and certname!='${trusted['certname']}'
       }").each | $info | {
         g_server::get_interfaces($api_side).map | $iface | {
           $info['parameters']['ips'].each | $index, $ip | {
