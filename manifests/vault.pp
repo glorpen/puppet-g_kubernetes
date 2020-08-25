@@ -1,8 +1,15 @@
+# @summary Configures Hashicorp Vault with Etcd as backend
+# 
+# @param package_checksum
+#   Vault package checksum (sha1)
+# @param export_etcd_client
+#   Exports g_kubernetes::etcd::node::client resource to mark this node as etcd client
 class g_kubernetes::vault (
   Enum['present', 'absent'] $ensure = 'present',
   String $package_version = '1.5.0',
   Optional[String] $package_checksum = undef,
   Optional[Array[String]] $etcd_urls = undef,
+  Boolean $export_etcd_client = true,
   Stdlib::AbsolutePath $config_dir = '/etc/vault',
   String $user = 'vault',
 

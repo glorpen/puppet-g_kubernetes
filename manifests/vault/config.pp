@@ -1,3 +1,4 @@
+# @api private
 class g_kubernetes::vault::config {
   include ::stdlib
 
@@ -9,6 +10,7 @@ class g_kubernetes::vault::config {
   $client_ca_cert = $::g_kubernetes::vault::client_ca_cert
   $conf_d_dir = $::g_kubernetes::vault::conf_d_dir
   $ensure = $::g_kubernetes::vault::ensure
+  $export_etcd_client = $::g_kubernetes::vault::export_etcd_client
 
   $ensure_directory = $ensure?{
     'present' => 'directory',
@@ -27,12 +29,14 @@ class g_kubernetes::vault::config {
         "${info['parameters']['client_scheme']}://${ip}:${info['parameters']['client_port']}"
       }
     })
+  } else {
+    $etcd_urls = $::g_kubernetes::vault::etcd_urls
+  }
 
+  if $export_etcd_client {
     @@g_kubernetes::etcd::node::client { $::trusted['certname']:
       ips => $::g_kubernetes::vault::peer_ips
     }
-  } else {
-    $etcd_urls = $::g_kubernetes::vault::etcd_urls
   }
 
   if $node_cert and $node_key {
