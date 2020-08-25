@@ -1,3 +1,3 @@
 define g_kubernetes::vault::peer (
-  Enum['present', 'absent'] $ensure = 'present',
+  Array[Stdlib::IP::Address::Nosubnet] $ips,
 ){}

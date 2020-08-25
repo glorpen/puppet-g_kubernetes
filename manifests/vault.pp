@@ -37,17 +37,16 @@ class g_kubernetes::vault (
 
   $peer_ips = g_kubernetes::get_ips($peer_side)
 
-  @@g_kubernetes::vault::peer { $::trusted['certname']:
-    ensure => $ensure,
-    ips    => $peer_ips
-  }
-
   include ::g_kubernetes::vault::package
   include ::g_kubernetes::vault::config
   include ::g_kubernetes::vault::firewall
   include ::g_kubernetes::vault::service
 
   if $ensure == 'present' {
+    @@g_kubernetes::vault::peer { $::trusted['certname']:
+      ips    => $peer_ips
+    }
+
     Class[::g_kubernetes::vault::package]
     ->Class[::g_kubernetes::vault::config]
     ->Class[::g_kubernetes::vault::firewall]
