@@ -49,8 +49,8 @@ class g_kubernetes::vault::package {
   }
 
   $pkg_name = "vault_${version}_linux_${_arch}"
-  $archive = "/opt/vault/share/vault-${version}.zip"
-  $vault_bin = "/opt/vault/share/${pkg_name}/vault"
+  $archive = "${share_dir}/vault-${version}.zip"
+  $vault_source_bin = "${share_dir}/${pkg_name}/vault"
 
   if $ensure == 'present' {
     archive { $archive:
@@ -62,7 +62,7 @@ class g_kubernetes::vault::package {
       group         => 0,
       checksum      => $_checksum,
       checksum_type => 'sha1',
-      creates       => "${share_dir}/${pkg_name}/vault",
+      creates       => $vault_source_bin,
       cleanup       => true,
     }
     ->file { "${share_dir}/${pkg_name}":
@@ -75,7 +75,7 @@ class g_kubernetes::vault::package {
     }
     file_capability { 'g_kubernetes::vault mlock':
       ensure     => $ensure_mlock,
-      file       => $vault_bin,
+      file       => $vault_source_bin,
       capability => 'cap_ipc_lock=ep',
       subscribe  => Archive[$archive],
       notify     => Service['vault']
@@ -84,7 +84,7 @@ class g_kubernetes::vault::package {
     file { $vault_bin:
       ensure  => 'symlink',
       require => Archive[$archive],
-      target  => $vault_bin
+      target  => $vault_source_bin
     }
 
     User[$user]
