@@ -87,6 +87,9 @@ class g_kubernetes::vault::package {
       target  => $vault_source_bin
     }
 
+    Group[$user]
+    ->User[$user]
+  } else {
     User[$user]
     ->Group[$user]
   }
