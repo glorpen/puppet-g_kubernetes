@@ -28,11 +28,7 @@ class g_kubernetes::vault (
   $ssl_dir = "${config_dir}/ssl"
   $conf_d_dir = "${config_dir}/conf.d"
 
-  $_ips = ['peer', 'client'].map | $type | {
-    g_kubernetes::get_ips(getvar("${type}_side"))
-  }
-  $peer_ips = $_ips[0]
-  $client_ips = $_ips[1]
+  $peer_ips = g_kubernetes::get_ips($peer_side)
 
   @@g_kubernetes::vault::peer { $::trusted['certname']:
     ensure => $ensure,
