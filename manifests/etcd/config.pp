@@ -95,6 +95,6 @@ class g_kubernetes::etcd::config {
 
   file { $config_file:
     ensure  => $ensure,
-    content => to_yaml($_config),
+    content => to_json_pretty($_config),
   }
 }

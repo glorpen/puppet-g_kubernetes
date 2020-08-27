@@ -4,6 +4,8 @@
 #   Vault package checksum (sha1)
 # @param export_etcd_client
 #   Exports g_kubernetes::etcd::node::client resource to mark this node as etcd client
+# @param api_advertise_host
+#   Optional address to use when advertising api address to clients. If not provided, first ip from api_side will be used.
 class g_kubernetes::vault (
   Enum['present', 'absent'] $ensure = 'present',
   String $package_version = '1.5.0',
@@ -38,7 +40,17 @@ class g_kubernetes::vault (
   $peer_ips = g_kubernetes::get_ips($peer_side)
   $api_ips = g_kubernetes::get_ips($api_side)
 
-  include ::g_kubernetes::vault::package
+  if defined(Class['g_kubernetes::vault::agent']) {
+    fail('g_kubernetes::vault::agent should be used after g_kubernetes::vault')
+  }
+
+  class{ 'g_kubernetes::vault::package':
+    ensure           => $ensure,
+    package_version  => $package_version,
+    package_checksum => $package_checksum,
+    disable_mlock    => $disable_mlock,
+    user             => $user
+  }
   include ::g_kubernetes::vault::config
   include ::g_kubernetes::vault::firewall
   include ::g_kubernetes::vault::service

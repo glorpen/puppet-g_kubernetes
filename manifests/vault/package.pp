@@ -1,10 +1,11 @@
-class g_kubernetes::vault::package {
-  $ensure = $::g_kubernetes::vault::ensure
-  $version = $::g_kubernetes::vault::package_version
-  $checksum = $::g_kubernetes::vault::package_checksum
-  $disable_mlock = $::g_kubernetes::vault::disable_mlock
-  $user = $::g_kubernetes::vault::user
-
+# @api private
+class g_kubernetes::vault::package (
+  Enum['present', 'absent'] $ensure = 'present',
+  String $version = '1.5.0',
+  Optional[String] $checksum = undef,
+  Optional[Boolean] $disable_mlock = undef,
+  Optional[String] $user = undef,
+){
   include ::stdlib
 
   $checksums = {
@@ -20,17 +21,19 @@ class g_kubernetes::vault::package {
   $share_dir = "${opt_dir}/share"
   $vault_bin = "${bin_dir}/vault"
 
-  group { $user:
-    ensure => $ensure,
-    system => true
-  }
-  user { $user:
-    ensure  => $ensure,
-    home    => '/dev/null',
-    system  => true,
-    shell   => '/sbin/nologin',
-    comment => 'vault user managed by puppet',
-    gid     => $user
+  if $user {
+    group { $user:
+      ensure => $ensure,
+      system => true
+    }
+    user { $user:
+      ensure  => $ensure,
+      home    => '/dev/null',
+      system  => true,
+      shell   => '/sbin/nologin',
+      comment => 'vault user managed by puppet',
+      gid     => $user
+    }
   }
 
   file { [$opt_dir, $share_dir, $bin_dir]:
@@ -73,16 +76,18 @@ class g_kubernetes::vault::package {
       require       => Package['unzip'],
     }
 
-    $ensure_mlock = $disable_mlock?{
-      true    => 'present',
-      default => 'absent'
-    }
-    file_capability { 'g_kubernetes::vault mlock':
-      ensure     => $ensure_mlock,
-      file       => $vault_source_bin,
-      capability => 'cap_ipc_lock=ep',
-      subscribe  => Archive[$archive],
-      notify     => Service['vault']
+    if $disable_mlock != undef {
+      $ensure_mlock = $disable_mlock?{
+        true    => 'present',
+        default => 'absent'
+      }
+      file_capability { 'g_kubernetes::vault mlock':
+        ensure     => $ensure_mlock,
+        file       => $vault_source_bin,
+        capability => 'cap_ipc_lock=ep',
+        subscribe  => Archive[$archive],
+        notify     => Service['vault']
+      }
     }
 
     file { $vault_bin:
@@ -91,10 +96,14 @@ class g_kubernetes::vault::package {
       target  => $vault_source_bin
     }
 
-    Group[$user]
-    ->User[$user]
+    if $user {
+      Group[$user]
+      ->User[$user]
+    }
   } else {
-    User[$user]
-    ->Group[$user]
+    if $user {
+      User[$user]
+      ->Group[$user]
+    }
   }
 }
