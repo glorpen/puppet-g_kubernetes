@@ -23,8 +23,11 @@ class g_kubernetes::vault::agent(
     }
   }
 
+  include ::g_kubernetes::vault::agent::service
+
   $_vault_token = "${config_dir}/.token"
   $templates_dir = "${config_dir}/templates"
+  $config_file = "${config_dir}/config.json"
 
   $ensure_directory = $ensure?{
     'present' => 'directory',
@@ -34,7 +37,8 @@ class g_kubernetes::vault::agent(
     ensure  => $ensure_directory,
     purge   => true,
     recurse => true,
-    force   => true
+    force   => true,
+    notify  => Service['vault-agent']
   }
 
   if $role_id and $role_secret {
@@ -42,11 +46,13 @@ class g_kubernetes::vault::agent(
     $_role_secret_file = "${config_dir}/.role-secret"
     file { $_role_id_file:
       ensure  => $ensure,
-      content => $role_id
+      content => $role_id,
+      notify  => Service['vault-agent']
     }
     file { $_role_secret_file:
       ensure  => $ensure,
-      content => $role_secret
+      content => $role_secret,
+      notify  => Service['vault-agent']
     }
 
     $auth_method = 'approle'
@@ -68,7 +74,8 @@ class g_kubernetes::vault::agent(
     file { $template_path:
       ensure  => $ensure,
       source  => $conf['source'],
-      content => $conf['content']
+      content => $conf['content'],
+      notify  => Service['vault-agent']
     }
 
     $wait_before_render = pick($conf['wait_before_render'], 0)
@@ -106,6 +113,7 @@ class g_kubernetes::vault::agent(
         {
           'type' => 'file',
           'config' => {
+            'mode' => '0600',
             'path' => $_vault_token
           }
         }
@@ -113,4 +121,11 @@ class g_kubernetes::vault::agent(
     },
     'template' => $templates_config
   })
+
+  file { $config_file:
+    ensure  => 'file',
+    content => $config,
+    mode    => 'go=,u=rw',
+    notify  => Service['vault-agent']
+  }
 }
