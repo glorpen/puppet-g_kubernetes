@@ -45,11 +45,11 @@ class g_kubernetes::vault (
   }
 
   class{ 'g_kubernetes::vault::package':
-    ensure           => $ensure,
-    package_version  => $package_version,
-    package_checksum => $package_checksum,
-    disable_mlock    => $disable_mlock,
-    user             => $user
+    ensure        => $ensure,
+    version       => $package_version,
+    checksum      => $package_checksum,
+    disable_mlock => $disable_mlock,
+    user          => $user
   }
   include ::g_kubernetes::vault::config
   include ::g_kubernetes::vault::firewall

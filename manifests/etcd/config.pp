@@ -16,7 +16,7 @@ class g_kubernetes::etcd::config {
     $ca_cert = getvar("::g_kubernetes::etcd::${type}_ca_cert")
     $ca_cert_path = g_kubernetes::certpath($ssl_dir, "${type}-ca-cert", $ca_cert)
     if $ca_cert_path {
-      g_kubernetes::certsource{ $ca_cert_path:
+      g_kubernetes::tls::certsource{ $ca_cert_path:
         source => $ca_cert,
         before => File[$config_file]
       }
@@ -32,11 +32,11 @@ class g_kubernetes::etcd::config {
     $key = getvar("::g_kubernetes::etcd::${type}_cert")
     $key_path = g_kubernetes::certpath($ssl_dir, "${type}-key", $key)
     if $cert_path and $key_path {
-      g_kubernetes::certsource{ $cert_path:
+      g_kubernetes::tls::certsource{ $cert_path:
         source => $cert,
         before => File[$config_file]
       }
-      g_kubernetes::certsource{ $key_path:
+      g_kubernetes::tls::certsource{ $key_path:
         source => $key,
         before => File[$config_file]
       }

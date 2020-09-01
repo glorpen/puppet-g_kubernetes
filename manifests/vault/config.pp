@@ -40,12 +40,22 @@ class g_kubernetes::vault::config {
   }
 
   if $node_cert and $node_key {
+    $node_cert_path = g_kubernetes::certpath($ssl_dir, 'peer-cert', $node_cert) # peer cert + CA cert
+    $node_key_path = g_kubernetes::certpath($ssl_dir, 'peer-key', $node_key)
+
     $tls_node_options = {
-      'tls_disable' => false,
-      'tls_cert_file' => g_kubernetes::certpath($ssl_dir, 'peer-cert', $node_cert), # peer cert + CA cert
-      'tls_key_file' => g_kubernetes::certpath($ssl_dir, 'peer-key', $node_key),
+      'tls_disable'   => false,
+      'tls_cert_file' => $node_cert_path,
+      'tls_key_file'  => $node_key_path,
     }
     $_cluster_api_scheme = 'https'
+
+    g_kubernetes::tls::certsource{ $node_cert_path:
+      source => $node_cert
+    }
+    g_kubernetes::tls::certsource{ $node_key_path:
+      source => $node_key
+    }
   } else {
     $tls_node_options = {
       'tls_disable' => true
@@ -54,10 +64,16 @@ class g_kubernetes::vault::config {
   }
 
   if $client_ca_cert {
+    $client_ca_path = g_kubernetes::certpath($ssl_dir, 'client-ca-cert', $client_ca_cert)
+
     $tls_client_options = {
-      'tls_client_ca_file' => g_kubernetes::certpath($ssl_dir, 'client-ca-cert', $client_ca_cert),
+      'tls_client_ca_file' => $client_ca_path,
       'tls_disable_client_certs' => false,
       'tls_require_and_verify_client_cert' => true
+    }
+
+    g_kubernetes::tls::certsource{ $client_ca_path:
+      source => $client_ca_cert
     }
   } else {
     $tls_client_options = {
