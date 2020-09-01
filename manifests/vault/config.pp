@@ -16,7 +16,7 @@ class g_kubernetes::vault::config {
     'present' => 'directory',
     default => 'absent'
   }
-  file { [$::g_kubernetes::vault::config_dir, $conf_d_dir]:
+  file { [$::g_kubernetes::vault::config_dir, $conf_d_dir, $ssl_dir]:
     ensure  => $ensure_directory,
     purge   => true,
     recurse => true,
