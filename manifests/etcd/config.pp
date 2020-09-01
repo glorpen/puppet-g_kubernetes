@@ -87,8 +87,8 @@ class g_kubernetes::etcd::config {
     'enable-v2' => false,
     'enable-pprof' => false,
     'proxy' => 'off',
-    'client-transport-security' => $_configs[0],
-    'peer-transport-security' => $_configs[1],
+    'client-transport-security' => $_configs[1],
+    'peer-transport-security' => $_configs[0],
     'listen-client-urls' => "${client_scheme}://0.0.0.0:${client_port}",
     'listen-peer-urls' => "${peer_scheme}://0.0.0.0:${peer_port}"
   }, $options)
