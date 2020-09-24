@@ -60,13 +60,13 @@ class g_kubernetes::etcd::config {
 
   if $servers == undef {
     # etcd needs own name in initial-cluster so we assume that there was noop-run beforehand
-    $_servers = flatten(puppetdb_query("resources[title, parameters]{
+    $_servers = sort(flatten(puppetdb_query("resources[title, parameters]{
       exported=true and type='G_kubernetes::Etcd::Node::Peer'
     }").map | $info | {
       enclose_ipv6($info['parameters']['ips']).map | $ip | {
         "${info['title']}=${info['parameters']['scheme']}://${ip}:${info['parameters']['port']}"
       }
-    })
+    }))
   } else {
     $_servers = $servers.map |$name, $ip| { "${name}=${peer_scheme}://${ip}:${peer_port}" }
   }
